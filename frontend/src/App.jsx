@@ -4,30 +4,34 @@ import { Toaster } from "react-hot-toast";
 import LandingPage from "./pages/LandingPage";
 import Dashboard from "./pages/Home/Dashboard";
 import InterviewPrep from "./pages/InterviewPrep/interviewPrep";
+import UserContext from "./context/userContext";
+import UserProvider from "./context/userContext";
 
 function App() {
   return (
-    <main>
-      <Router>
-        <Routes>
-          <Route path="/" element={<LandingPage />} />
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route
-            path="/interview-prep/:sessionId"
-            element={<InterviewPrep />}
-          />
-        </Routes>
-      </Router>
+    <UserProvider>
+      <main>
+        <Router>
+          <Routes>
+            <Route path="/" element={<LandingPage />} />
+            <Route path="/dashboard" element={<Dashboard />} />
+            <Route
+              path="/interview-prep/:sessionId"
+              element={<InterviewPrep />}
+            />
+          </Routes>
+        </Router>
 
-      <Toaster
-        toastOptions={{
-          className: "",
-          style: {
-            fontSize: "13px",
-          },
-        }}
-      />
-    </main>
+        <Toaster
+          toastOptions={{
+            className: "",
+            style: {
+              fontSize: "13px",
+            },
+          }}
+        />
+      </main>
+    </UserProvider>
   );
 }
 
