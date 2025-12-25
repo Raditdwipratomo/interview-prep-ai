@@ -1,21 +1,30 @@
-import { useState } from "react";
+import { useContext, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Input from "../../components/Inputs/Input";
 import ProfilePhotoSelector from "../../components/Inputs/ProfilePhotoSelector";
 import { validateEmail } from "../../utils/helper";
+import axiosInstance from "../../utils/axiosInstance";
+import { API_PATHS } from "../../utils/apiPaths";
+import uploadImage from "../../utils/uploudImage";
+import { UserContext } from "../../context/userContext";
 
 const SignUp = ({ setCurrentPage }) => {
   const [profilePic, setProfilePic] = useState(null);
+  const [profilePicUrl, setProfilePicUrl] = useState("");
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
   const [error, setError] = useState(null);
 
+  const { updateUser } = useContext(UserContext);
+
   const navigate = useNavigate();
 
   const handleSignUp = async (e) => {
     e.preventDefault();
+
+    let profileImageUrl = "";
 
     if (!fullName) {
       setError("Please enter full name.");
@@ -32,6 +41,27 @@ const SignUp = ({ setCurrentPage }) => {
     setError("");
 
     try {
+      // Upload image if present
+      if (profilePic) {
+        const imgUploadRes = await uploadImage(profilePic);
+        console.log("image", imgUploadRes);
+        profileImageUrl = imgUploadRes.imageUrl || "";
+      }
+
+      const response = await axiosInstance.post(API_PATHS.AUTH.REGISTER, {
+        name: fullName,
+        email,
+        password,
+        profileImageUrl,
+      });
+
+      const { token } = response.data;
+
+      if (token) {
+        localStorage.setItem("token", token);
+        updateUser(response.data);
+        navigate("/dashboard");
+      }
     } catch (error) {
       if (error.response && error.response.data.message) {
         setError(error.response.data.message);
@@ -50,8 +80,8 @@ const SignUp = ({ setCurrentPage }) => {
         <ProfilePhotoSelector
           image={profilePic}
           setImage={setProfilePic}
-          preview={profilePic}
-          setPreview={setProfilePic}
+          preview={profilePicUrl}
+          setPreview={setProfilePicUrl}
         />
         <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
           <Input
@@ -69,15 +99,14 @@ const SignUp = ({ setCurrentPage }) => {
             placeholder={"john@example.com"}
             type={"text"}
           />
-
-          <Input
-            value={password}
-            onChange={({ target }) => setPassword(target.value)}
-            label={"Password"}
-            placeholder={"Min 8 Characters"}
-            type={"password"}
-          />
         </div>
+        <Input
+          value={password}
+          onChange={({ target }) => setPassword(target.value)}
+          label={"Password"}
+          placeholder={"Min 8 Characters"}
+          type={"password"}
+        />
 
         {error && <p className="text-red-500 text-xs pb-2.5">{error}</p>}
 

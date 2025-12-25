@@ -3,19 +3,16 @@ const {
   conceptExplainPrompt,
   questionAnswerPrompt,
 } = require("../utils/prompts");
+const { extractJSON } = require("../utils/helper");
+// const { extractJSON } = require("../utils/helper");
 
 const groq = new Groq({
   apiKey: process.env.GROQ_API_KEY,
 });
 
-// @desc    Generate interview questions and answers using Gemini
-// @route   POST /api/ai/generate-questions
-// @access  Private
-
-// @desc    Generate interview questions and answers using Groq
-// @route   POST /api/ai/generate-questions
-// @access  Private
-
+// ===============================
+// Generate Interview Questions
+// ===============================
 const generateInterviewQuestions = async (req, res) => {
   try {
     const { role, experience, topicsToFocus, numberOfQuestions } = req.body;
@@ -37,7 +34,7 @@ const generateInterviewQuestions = async (req, res) => {
         {
           role: "system",
           content:
-            "You are an AI that ONLY returns valid JSON. Do not include explanations.",
+            "You are an AI that strictly follows instructions and returns ONLY valid JSON. Do not include any text outside JSON.",
         },
         {
           role: "user",
@@ -45,28 +42,35 @@ const generateInterviewQuestions = async (req, res) => {
         },
       ],
       temperature: 0.4,
+      max_tokens: 1500,
     });
 
     const rawText = completion.choices[0].message.content;
 
-    // Parse JSON safely
-    const data = JSON.parse(rawText);
+    let data;
+    try {
+      data = extractJSON(rawText);
+    } catch (parseError) {
+      console.error("JSON Parse Error:", rawText);
+      return res.status(500).json({
+        message: "Invalid JSON returned by AI",
+      });
+    }
 
     return res.status(200).json(data);
   } catch (error) {
     console.error("Groq Error:", error);
 
-    res.status(500).json({
+    return res.status(500).json({
       message: "Failed to generate questions",
       error: error.message,
     });
   }
 };
 
-// @desc    Generate explains a interview question
-// @route   POST /api/ai/generate-explanation
-// @access  Private
-
+// ===============================
+// Generate Concept Explanation
+// ===============================
 const generateConceptExplanation = async (req, res) => {
   try {
     const { question } = req.body;
@@ -81,24 +85,43 @@ const generateConceptExplanation = async (req, res) => {
       model: "llama-3.1-8b-instant",
       messages: [
         {
+          role: "system",
+          content:
+            "You are an AI that strictly follows instructions and returns ONLY valid JSON. Do not include any text outside JSON.",
+        },
+        {
           role: "user",
           content: prompt,
         },
       ],
       temperature: 0.4,
+      max_tokens: 1200,
     });
 
     const rawText = completion.choices[0].message.content;
 
-    // Parse JSON safely
-    const data = JSON.parse(rawText);
+    let data;
+    try {
+      data = extractJSON(rawText);
+    } catch (parseError) {
+      console.error("JSON Parse Error:", rawText);
+      return res.status(500).json({
+        message: "Invalid JSON returned by AI",
+      });
+    }
 
     return res.status(200).json(data);
   } catch (error) {
-    res
-      .status(500)
-      .json({ message: "Failed to generate questions", error: error.message });
+    console.error("Groq Error:", error);
+
+    return res.status(500).json({
+      message: "Failed to generate explanation",
+      error: error.message,
+    });
   }
 };
 
-module.exports = { generateConceptExplanation, generateInterviewQuestions };
+module.exports = {
+  generateInterviewQuestions,
+  generateConceptExplanation,
+};
