@@ -42,7 +42,7 @@ const generateInterviewQuestions = async (req, res) => {
         },
       ],
       temperature: 0.4,
-      max_tokens: 1500,
+      max_tokens: 2500,
     });
 
     const rawText = completion.choices[0].message.content;
@@ -95,7 +95,7 @@ const generateConceptExplanation = async (req, res) => {
         },
       ],
       temperature: 0.4,
-      max_tokens: 1200,
+      max_tokens: 2500,
     });
 
     const rawText = completion.choices[0].message.content;
@@ -104,7 +104,6 @@ const generateConceptExplanation = async (req, res) => {
     try {
       data = extractJSON(rawText);
     } catch (parseError) {
-      console.error("JSON Parse Error:", rawText);
       return res.status(500).json({
         message: "Invalid JSON returned by AI",
       });
